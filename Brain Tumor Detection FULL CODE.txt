@@ -1,0 +1,160 @@
+Brain Tumor Detection FULL CODE
+
+# Import Libraries
+import os
+import cv2
+import numpy as np
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.applications import VGG19, ResNet50
+from tensorflow.keras.layers import Dense, Dropout, Flatten
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.optimizers import Adam
+import matplotlib.pyplot as plt
+# Define Image Dimensions
+IMG_WIDTH = 224
+IMG_HEIGHT = 224
+IMG_CHANNELS = 3
+# Load and Prepare Data
+data_dir = "/content/drive/MyDrive/road image/sih_road_dataset"
+labels = ["good", "poor", "satisfactory", "very_poor"]
+x = []
+y = []
+for label in labels:
+data = os.path.join(data_dir, label)
+for image in os.listdir(data):
+try:
+im = cv2.imread(os.path.join(data, image), cv2.IMREAD_COLOR)
+im = cv2.resize(im, (IMG_WIDTH, IMG_HEIGHT))
+x.append(im)
+y.append(labels.index(label))
+except Exception as e:
+pass
+x = np.array(x)
+y = np.array(y)
+# Convert Labels to One-Hot Encoding
+y = to_categorical(y, num_classes=4)
+# Split Data into Train and Validation Sets
+x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=0.2, random_state=42)
+
+# Data Augmentation
+train_datagen = ImageDataGenerator(
+rotation_range=30, width_shift_range=0.2, height_shift_range=0.2, shear_range=0.2, zoom_range=0.2, horizontal_flip=True, fill_mode='nearest' 20
+val_datagen = ImageDataGenerator()
+train_generator = train_datagen.flow(x_train, y_train, batch_size=32)
+val_generator = val_datagen.flow(x_val, y_val, batch_size=32)
+
+# Define CNN Model
+cnn_model = Sequential()
+cnn_model.add(Conv2D(32, (3, 3), activation='relu', input_shape=(IMG_WIDTH, IMG_HEIGHT, IMG_CHANNELS)))
+cnn_model.add(MaxPooling2D((2, 2)))
+cnn_model.add(Conv2D(64, (3, 3), activation='relu'))
+cnn_model.add(MaxPooling2D((2, 2)))
+cnn_model.add(Conv2D(128, (3, 3), activation='relu'))
+cnn_model.add(MaxPooling2D((2, 2)))
+cnn_model.add(Flatten())
+cnn_model.add(Dense(128, activation='relu'))
+cnn_model.add(Dropout(0.5))
+cnn_model.add(Dense(4, activation='softmax'))
+# Compile CNN Model
+cnn_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+# Train CNN Model
+cnn_history = cnn_model.fit(train_generator, epochs=20, validation_data=val_generator)
+
+# Define VGG19 Model
+vgg19_base = VGG19(weights='imagenet', include_top=False, input_shape=(IMG_WIDTH, IMG_HEIGHT, IMG_CHANNELS))
+vgg19_model = Sequential()
+vgg19_model.add(vgg19_base)
+vgg19_model.add(Flatten())
+vgg19_model.add(Dense(128, activation='relu'))
+vgg19_model.add(Dropout(0.5))
+vgg19_model.add(Dense(4, activation='softmax'))
+# Compile VGG19 Model
+vgg19_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+# Train VGG19 Model
+vgg19_history = vgg19_model.fit(train_generator, epochs=20, validation_data=val_generator)
+
+# Define ResNet50 Model
+resnet50_base = ResNet50(weights='imagenet', include_top=False, input_shape=(IMG_WIDTH, IMG_HEIGHT, IMG_CHANNELS))
+resnet50_model = Sequential()
+resnet50_model.add(resnet50_base)
+resnet50_model.add(Flatten())
+resnet50_model.add(Dense(128, activation='relu'))
+resnet50_model.add(Dropout(0.5))
+resnet50_model.add(Dense(4, activation='softmax'))
+# Compile ResNet50 Model
+resnet50_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+# Train ResNet50 Model
+resnet50_history = resnet50_model.fit(train_generator, epochs=20, validation_data=val_generator)
+
+# Evaluate Models
+cnn_loss, cnn_accuracy = cnn_model.evaluate(val_generator)
+print(f"CNN Validation Loss: {cnn_loss}")
+print(f"CNN Validation Accuracy: {cnn_accuracy}")
+vgg19_loss, vgg19_accuracy = vgg19_model.evaluate(val_generator)
+print(f"VGG19 Validation Loss: {vgg19_loss}")
+print(f"VGG19 Validation Accuracy: {vgg19_accuracy}")
+resnet50_loss, resnet50_accuracy = resnet50_model.evaluate(val_generator)
+print(f"ResNet50 Validation Loss: {resnet50_loss}")
+print(f"ResNet50 Validation Accuracy: {resnet50_accuracy}")
+
+# Visualize Training History
+# CNN Training History
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 2, 1)
+plt.plot(cnn_history.history['accuracy'])
+plt.plot(cnn_history.history['val_accuracy'])
+plt.title('CNN Model Accuracy')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.legend(['Train', 'Validation'], loc='upper left')
+plt.subplot(1, 2, 2)
+plt.plot(cnn_history.history['loss'])
+plt.plot(cnn_history.history['val_loss'])
+plt.title('CNN Model Loss')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.legend(['Train', 'Validation'], loc='upper left')
+plt.show()
+
+# VGG19 Training History
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 2, 1)
+plt.plot(vgg19_history.history['accuracy'])
+plt.plot(vgg19_history.history['val_accuracy'])
+plt.title('VGG19 Model Accuracy')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.legend(['Train', 'Validation'], loc='upper left')
+plt.subplot(1, 2, 2)
+plt.plot(vgg19_history.history['loss'])
+plt.plot(vgg19_history.history['val_loss'])
+plt.title('VGG19 Model Loss')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.legend(['Train', 'Validation'], loc='upper left')
+plt.show()
+
+# ResNet50 Training History
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 2, 1)
+plt.plot(resnet50_history.history['accuracy'])
+plt.plot(resnet50_history.history['val_accuracy'])
+plt.title('ResNet50 Model Accuracy')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.legend(['Train', 'Validation'], loc='upper left')
+Plt.subplot(1, 2, 2)
+plt.plot(resnet50_history.history['loss'])
+plt.plot(resnet50_history.history['val_loss'])
+plt.title('ResNet50 Model Loss')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.legend(['Train', 'Validation'], loc='upper left')
+plt.show()
+
+# Save Models
+cnn_model.save('cnn_model.h5')
+vgg19_model.save('vgg19_model.h5')
+resnet50_model.save('resnet50_model.h5')
